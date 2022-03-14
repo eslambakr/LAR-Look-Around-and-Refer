@@ -205,7 +205,7 @@ class MMT(BertPreTrainedModel):
             )
             # decoding step elements can attend to themselves in a causal manner
             num_2d = obj_max_num // 2
-            # TODO: eslam This part should be configurable!
+            # TODO: E This part should be configurable!
             #extended_attention_mask[:, :, :-num_2d, -num_2d:] = 0.  # mask during training phase
         extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
         assert not extended_attention_mask.requires_grad

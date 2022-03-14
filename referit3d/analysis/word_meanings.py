@@ -53,7 +53,7 @@ spatial_tokens = spatial_words.union(spatial_prepositions)
 spatial_expressions = [['close', 'to'], ['next', 'to'], ['back', 'of']]
 
 
-# Panos will put below in a nicer way.
+# P will put below in a nicer way.
 def subfinder(mylist, pattern):
     matches = []
     for i in range(len(mylist)):

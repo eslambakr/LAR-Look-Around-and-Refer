@@ -223,7 +223,7 @@ class ScannetScan(object):
             scan_aggregation = json.load(fin)
 
         scan_segs_suffix = '_vh_clean.segs.json'
-        # eslam do that to force replacment
+        # E do that to force replacment
         scan_aggregation['segmentsFile'] = scan_aggregation['segmentsFile'].split("_vh_clean")[0] + scan_segs_suffix
 
         segment_file = self.scan_id + scan_segs_suffix

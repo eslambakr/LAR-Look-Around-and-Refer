@@ -3,7 +3,6 @@ TODO: add description
 
 The MIT License (MIT)
 Originally created at 7/13/20, for Python 3.x
-Copyright (c) 2020 Panos Achlioptas (pachlioptas@gmail.com) & Stanford Geometric Computing Lab
 """
 
 import pandas as pd
@@ -21,7 +20,7 @@ def analyze_predictions(model, dataset, class_to_idx, pad_idx, device, args, out
     :param net_stats:
     :param pad_idx:
     :return:
-    # TODO Panos Post 17 July : clear
+    # TODO P Post 17 July : clear
     """
 
     references = dataset.references
@@ -29,7 +28,7 @@ def analyze_predictions(model, dataset, class_to_idx, pad_idx, device, args, out
     # # YOU CAN USE Those to VISUALIZE PREDICTIONS OF A SYSTEM.
     # confidences_probs = stats['confidences_probs']  # for every object of a scan it's chance to be predicted.
     # objects = stats['contrasted_objects'] # the object-classes (as ints) of the objects corresponding to the confidences_probs
-    # context_size = (objects != pad_idx).sum(1) # TODO-Panos assert same as from batch!
+    # context_size = (objects != pad_idx).sum(1) # TODO-P assert same as from batch!
     # target_ids = references.instance_type.apply(lambda x: class_to_idx[x])
 
     hardness = references.stimulus_id.apply(lambda x: decode_stimulus_string(x)[2])
@@ -100,7 +99,7 @@ def analyze_predictions(model, dataset, class_to_idx, pad_idx, device, args, out
     # data_df = data_df.assign(target_pos = pd.Series(net_stats['target_pos']))
     #
     # data_df['n_target_class_inv'] = 1 / data_df['n_target_class']
-    # data_df['context_size'] = (contrasted_objects != pad_idx).sum(1) # TODO-Panos assert same as from batch!
+    # data_df['context_size'] = (contrasted_objects != pad_idx).sum(1) # TODO-P assert same as from batch!
     #
     # print('Among target\'s classes', data_df.n_target_class_inv.mean())
     # print('among all classes', (1.0 / data_df['context_size']).mean())

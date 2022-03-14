@@ -2,11 +2,11 @@
 # coding: utf-8
 """
 1) To run SAT 2d Features:
---patience 100 --max-train-epochs 100 --init-lr 1e-4 --batch-size 2 --n-workers 2 --transformer --model mmt_referIt3DNet -scannet-file /home/eslam/scannet_dataset/scannet/scan_4_nr3d/keep_all_points_00_view_no_global_scan_alignment_saveJPG_cocoon_twoStreams.pkl -referit3D-file /home/eslam/scannet_dataset/scannet/nr3d.csv --log-dir ../del --unit-sphere-norm True --feat2d ROI --context_2d unaligned --mmt_mask train2d --warmup -load-imgs False --img-encoder False --object-encoder pnet_pp -load-dense False --train-vis-enc-only False --imgsize 32 --cocoon False --twoStreams False --context_info_2d_cached_file /media/eslam/0d208863-5cdb-4a43-9794-3ca8726831b3/3D_visual_grounding/dataset/scannet
+--patience 100 --max-train-epochs 100 --init-lr 1e-4 --batch-size 2 --n-workers 2 --transformer --model mmt_referIt3DNet -scannet-file /home/e/scannet_dataset/scannet/scan_4_nr3d/keep_all_points_00_view_no_global_scan_alignment_saveJPG_cocoon_twoStreams.pkl -referit3D-file /home/e/scannet_dataset/scannet/nr3d.csv --log-dir ../del --unit-sphere-norm True --feat2d ROI --context_2d unaligned --mmt_mask train2d --warmup -load-imgs False --img-encoder False --object-encoder pnet_pp -load-dense False --train-vis-enc-only False --imgsize 32 --cocoon False --twoStreams False --context_info_2d_cached_file /media/e/0d208863-5cdb-4a43-9794-3ca8726831b3/3D_visual_grounding/dataset/scannet
 2) To run our 2d Features (clssonly):
---patience 100 --max-train-epochs 100 --init-lr 1e-4 --batch-size 2 --n-workers 2 --transformer --model mmt_referIt3DNet -scannet-file /home/eslam/scannet_dataset/scannet/scan_4_nr3d/keep_all_points_00_view_no_global_scan_alignment_saveJPG_cocoon_twoStreams.pkl -referit3D-file /home/eslam/scannet_dataset/scannet/nr3d.csv --log-dir ../del --unit-sphere-norm True --feat2d clsvecROI --context_2d unaligned --mmt_mask train2d --warmup -load-imgs True --img-encoder True --object-encoder convnext -load-dense False --train-vis-enc-only True --imgsize 32 --cocoon False --twoStreams False
+--patience 100 --max-train-epochs 100 --init-lr 1e-4 --batch-size 2 --n-workers 2 --transformer --model mmt_referIt3DNet -scannet-file /home/e/scannet_dataset/scannet/scan_4_nr3d/keep_all_points_00_view_no_global_scan_alignment_saveJPG_cocoon_twoStreams.pkl -referit3D-file /home/e/scannet_dataset/scannet/nr3d.csv --log-dir ../del --unit-sphere-norm True --feat2d clsvecROI --context_2d unaligned --mmt_mask train2d --warmup -load-imgs True --img-encoder True --object-encoder convnext -load-dense False --train-vis-enc-only True --imgsize 32 --cocoon False --twoStreams False
 3) To run our 2d features (E2E):
---patience 100 --max-train-epochs 100 --init-lr 1e-4 --batch-size 2 --n-workers 2 --transformer --model mmt_referIt3DNet -scannet-file /home/eslam/scannet_dataset/scannet/scan_4_nr3d/keep_all_points_00_view_no_global_scan_alignment_saveJPG_cocoon_twoStreams.pkl -referit3D-file /home/eslam/scannet_dataset/scannet/nr3d.csv --log-dir ../del --unit-sphere-norm True --feat2d clsvecROI --context_2d unaligned --mmt_mask train2d --warmup -load-imgs True --img-encoder True --object-encoder convnext_p++ -load-dense False --train-vis-enc-only False --imgsize 32 --cocoon False --twoStreams True
+--patience 100 --max-train-epochs 100 --init-lr 1e-4 --batch-size 2 --n-workers 2 --transformer --model mmt_referIt3DNet -scannet-file /home/e/scannet_dataset/scannet/scan_4_nr3d/keep_all_points_00_view_no_global_scan_alignment_saveJPG_cocoon_twoStreams.pkl -referit3D-file /home/e/scannet_dataset/scannet/nr3d.csv --log-dir ../del --unit-sphere-norm True --feat2d clsvecROI --context_2d unaligned --mmt_mask train2d --warmup -load-imgs True --img-encoder True --object-encoder convnext_p++ -load-dense False --train-vis-enc-only False --imgsize 32 --cocoon False --twoStreams True
 """
 import os
 import sys
@@ -295,7 +295,7 @@ def main_worker(gpu, ngpus_per_node, args):
         pretrained_dict = load_model['model']
         model_dict = model.state_dict()
         # pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-        # TODO: Eslam should add support to eval in distributed mode
+        # TODO: E, should add support to eval in distributed mode
         # Remove "module." if we train on distributed training and test on single GPU:
         pretrained_dict = {key.replace("module.", ''): item for key, item in pretrained_dict.items()}
         model_dict.update(pretrained_dict)

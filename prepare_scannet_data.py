@@ -10,7 +10,7 @@ from referit3d.in_out.scannet_scan import ScannetScan, ScannetDataset
 from referit3d.utils import immediate_subdirectories, create_dir, pickle_data, str2bool
 
 """
--top-scan-dir /home/eslam/scannet_dataset/scannet/scans -top-save-dir /home/eslam/scannet_dataset/scannet/scan_4_nr3d --load-dense False --save-jpg True --imgsize 128 --apply-global-alignment False
+-top-scan-dir /home/e/scannet_dataset/scannet/scans -top-save-dir /home/e/scannet_dataset/scannet/scan_4_nr3d --load-dense False --save-jpg True --imgsize 128 --apply-global-alignment False
 """
 
 

@@ -3,7 +3,6 @@ I/O routines sr3d-oriented.
 
 The MIT License (MIT)
 Originally created at 7/1/20, for Python 3.x
-Copyright (c) 2020 Panos Achlioptas (pachlioptas@gmail.com) & Stanford Geometric Computing Lab
 """
 
 import pathlib

@@ -288,7 +288,7 @@ def project_pc_2_img(scan, obj, saving_pth, augment=True, cocoonAngles = [0]):
             grid = cv2.resize(grid, desired_shape)
             cv2.imwrite(saving_pth + "_" + str(angle) + ".jpg", grid)
 
-            # TODO: eslam add condition here on args.geo
+            # TODO: E add condition here on args.geo
             # Add Geometry info for each 2d image in world space:
             objGeoInfo = np.concatenate((np.array(obj.get_bbox().corners).flatten(), camera_pos, direction))
             np.save(saving_pth + "_" + str(angle), objGeoInfo)
@@ -324,7 +324,7 @@ def project_pc_2_img(scan, obj, saving_pth, augment=True, cocoonAngles = [0]):
         grid = cv2.resize(grid, desired_shape)
         cv2.imwrite(saving_pth+"_"+str(angle)+".jpg", grid)
 
-        # TODO: eslam add condition here on args.geo
+        # TODO: E add condition here on args.geo
         # Add Geometry info for each 2d image in world space:
         objGeoInfo = np.concatenate((np.array(obj.get_bbox().corners).flatten(), camera_pos, direction))
         np.save(saving_pth+"_"+str(angle), objGeoInfo)
