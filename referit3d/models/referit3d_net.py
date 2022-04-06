@@ -48,12 +48,12 @@ class MMT_ReferIt3DNet(nn.Module):
 
         # Encoders for visual 2D objects
         ROIFeatDim = args.feat2ddim
-        num_class_dim = 525 if '00' in args.scannet_file else 608
+        self.num_class_dim = 525 if '00' in args.scannet_file else 608
         featdim = 0
         if 'ROI' in (args.feat2d.replace('3D', '')):
             featdim += ROIFeatDim
         if 'clsvec' in (args.feat2d.replace('3D', '')):
-            featdim += num_class_dim
+            featdim += self.num_class_dim
         if 'Geo' in (args.feat2d.replace('3D', '')):
             featdim += 30
 
@@ -94,7 +94,7 @@ class MMT_ReferIt3DNet(nn.Module):
             self.obj2d_feat_layer_norm = BertLayerNorm(MMT_HIDDEN_SIZE)
             if 'clspred' in (args.feat2d.replace('3D', '')):
                 print("Cls_Pred is activated !!!!")
-                self.linear_2d_feat_to_mmt_in_clspred = nn.Linear(MMT_HIDDEN_SIZE+524, MMT_HIDDEN_SIZE)
+                self.linear_2d_feat_to_mmt_in_clspred = nn.Linear(MMT_HIDDEN_SIZE+self.num_class_dim-1, MMT_HIDDEN_SIZE)
                 self.obj2d_feat_layer_norm_clspred = BertLayerNorm(MMT_HIDDEN_SIZE)
             # self.linear_2d_bbox_to_mmt_in = nn.Linear(30, MMT_HIDDEN_SIZE)
             # self.obj2d_bbox_layer_norm = BertLayerNorm(MMT_HIDDEN_SIZE)

@@ -31,7 +31,7 @@ def random_alphanumeric(n_chars):
     return res
 
 
-def seed_training_code(manual_seed, strict=True):
+def seed_training_code(manual_seed, strict=True, gen=None):
     """Control pseudo-randomness for reproducibility.
     :param manual_seed: (int) random-seed
     :param strict: (boolean) if True, cudnn operates in a deterministic manner
@@ -39,10 +39,13 @@ def seed_training_code(manual_seed, strict=True):
     random.seed(manual_seed)
     np.random.seed(manual_seed)
     torch.manual_seed(manual_seed)
-    torch.cuda.manual_seed_all(manual_seed)
-    # torch.set_deterministic(True) ## 1.7.0 https://pytorch.org/docs/stable/generated/torch.set_deterministic.html
+    torch.cuda.manual_seed_all(manual_seed)  # https://discuss.pytorch.org/t/same-input-to-same-trained-model-producing-different-results-each-time/6704/15
+    # E: Fix it using https://discuss.pytorch.org/t/does-a-dataloader-change-random-state-even-when-shuffle-argument-is-false/92569/4
+    gen.manual_seed(manual_seed)
+    # torch.use_deterministic_algorithms()
+    torch.set_deterministic(True)
     if strict:
-        # torch.backends.cudnn.enabled = False
+        torch.backends.cudnn.enabled = False
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
 

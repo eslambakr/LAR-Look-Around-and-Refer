@@ -2,6 +2,7 @@ import warnings
 import numpy as np
 import multiprocessing as mp
 from torch.utils.data import DataLoader
+import random
 
 
 def max_io_workers():
@@ -14,10 +15,11 @@ def max_io_workers():
 def worker_init_fn(x):
     # TODO: Eslam should make this generic.
     np.random.seed(2020)
+    random.seed(2020)
     return
 
 
-def dataset_to_dataloader(dataset, split, batch_size, n_workers, sampler, pin_memory=False, seed=None):
+def dataset_to_dataloader(dataset, split, batch_size, n_workers, sampler, pin_memory=False, seed=None, gen=None):
     """
     :param dataset:
     :param split:
@@ -49,6 +51,7 @@ def dataset_to_dataloader(dataset, split, batch_size, n_workers, sampler, pin_me
                              shuffle=shuffle,
                              drop_last=drop_last,
                              pin_memory=pin_memory,
+                             generator=gen,
                              worker_init_fn=worker_init_fn, sampler=sampler)
     return data_loader
 

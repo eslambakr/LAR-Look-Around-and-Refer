@@ -68,7 +68,7 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
 
     # Set the model in training mode
     model.train()
-    np.random.seed()  # call this to change the sampling of the point-clouds, in a time-invariant way
+    np.random.seed(args.random_seed)  # call this to change the sampling of the point-clouds, in a time-invariant way
     batch_keys = make_batch_keys(args)
     if args.train_vis_enc_only:
         repeatationFactor = 1
@@ -256,14 +256,18 @@ def compute_losses(batch, res, criterion_dict, args):
     obj_clf_loss = lang_clf_loss = obj_clf_loss_2d = 0
     if args.obj_cls_alpha > 0:
         criterion = criterion_dict['class_logits']
+        torch.set_deterministic(False)
         obj_clf_loss = criterion(res['class_logits'].transpose(2, 1), batch['class_labels'])
+        torch.set_deterministic(True)
         if args.s_vs_n_weight is not None:
             obj_clf_loss = torch.mean(obj_clf_loss, dim=1) * weights
             obj_clf_loss = obj_clf_loss.sum() / len(obj_clf_loss)
         total_loss += obj_clf_loss * args.obj_cls_alpha
         if args.context_2d == 'unaligned':
             criterion = criterion_dict['class_logits_2d']
+            torch.set_deterministic(False)
             obj_clf_loss_2d = criterion(res['class_logits_2d'].transpose(2, 1), batch['class_labels'])
+            torch.set_deterministic(True)
             if args.s_vs_n_weight is not None:
                 obj_clf_loss_2d = torch.mean(obj_clf_loss_2d, dim=1) * weights
                 obj_clf_loss_2d = obj_clf_loss_2d.sum() / len(obj_clf_loss_2d)
@@ -303,85 +307,87 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
 
     assert (randomize == False)
     if randomize:
-        np.random.seed()  # call this to change the sampling of the point-clouds #TODO-A talk about it.
+        np.random.seed(0)  # call this to change the sampling of the point-clouds #TODO-A talk about it.
     else:
         np.random.seed(args.random_seed)
 
     batch_keys = make_batch_keys(args)
 
-    for batch in data_loader:
-        # Move data to gpu
-        for k in batch_keys:
-            if k in batch:
-                batch[k] = batch[k].to(device)
+    with torch.no_grad():
+        for batch in data_loader:
+            # Move data to gpu
+            for k in batch_keys:
+                if k in batch:
+                    batch[k] = batch[k].to(device)
 
-        if args.object_encoder == 'pnet':
-            # batch['objects'] = batch['objects'].permute(0, 1, 3, 2)
-            batch['objects'] = batch['objects'].permute(0, 1, 3, 2).contiguous()
+            if args.object_encoder == 'pnet':
+                # batch['objects'] = batch['objects'].permute(0, 1, 3, 2)
+                batch['objects'] = batch['objects'].permute(0, 1, 3, 2).contiguous()
 
-        # Forward pass
-        res = model(batch)
+            # Forward pass
+            res = model(batch)
 
-        all_losses = compute_losses(batch, res, criteria, args)
+            all_losses = compute_losses(batch, res, criteria, args)
 
-        # Update the loss and accuracy meters
-        target = batch['target_pos']
-        batch_size = target.size(0)  # B x N_Objects
-        # total_loss_mtr.update(all_losses['total_loss'].item(), batch_size)
-        total_loss_mtr.update(all_losses['total_loss'].detach().item(), batch_size)
+            # Update the loss and accuracy meters
+            target = batch['target_pos']
+            batch_size = target.size(0)  # B x N_Objects
+            # total_loss_mtr.update(all_losses['total_loss'].item(), batch_size)
+            total_loss_mtr.update(all_losses['total_loss'].detach().item(), batch_size)
 
-        if args.train_vis_enc_only == False:
-            referential_loss_mtr.update(all_losses['referential_loss'], batch_size)
-            if args.context_2d == 'unaligned' and args.obj_cls_alpha > 0:
-                referential_loss_mtr_2d.update(all_losses['referential_loss_2d'], batch_size)
+            if args.train_vis_enc_only == False:
+                referential_loss_mtr.update(all_losses['referential_loss'], batch_size)
+                if args.context_2d == 'unaligned' and args.obj_cls_alpha > 0:
+                    referential_loss_mtr_2d.update(all_losses['referential_loss_2d'], batch_size)
 
-        if args.train_vis_enc_only == False:
-            predictions = torch.argmax(res['logits'], dim=1)
-            # guessed_correctly = torch.mean((predictions == target).double()).item()
-            guessed_correctly = torch.mean((predictions == target).double()).detach().item()
-            ref_acc_mtr.update(guessed_correctly, batch_size)
-            if args.context_2d == 'unaligned' and args.obj_cls_alpha > 0:
-                predictions = torch.argmax(res['logits_2D'], dim=1)
+            if args.train_vis_enc_only == False:
+                predictions = torch.argmax(res['logits'], dim=1)
+                # guessed_correctly = torch.mean((predictions == target).double()).item()
                 guessed_correctly = torch.mean((predictions == target).double()).detach().item()
-                ref_acc_mtr_2d.update(guessed_correctly, batch_size)
+                ref_acc_mtr.update(guessed_correctly, batch_size)
+                if args.context_2d == 'unaligned' and args.obj_cls_alpha > 0:
+                    predictions = torch.argmax(res['logits_2D'], dim=1)
+                    guessed_correctly = torch.mean((predictions == target).double()).detach().item()
+                    ref_acc_mtr_2d.update(guessed_correctly, batch_size)
 
+            if args.train_vis_enc_only == False:
+                cls_b_acc, _ = cls_pred_stats(res['class_logits'], batch['class_labels'], ignore_label=pad_idx)
+                cls_acc_mtr.update(cls_b_acc, batch_size)
+                obj_loss_mtr.update(all_losses['obj_clf_loss'].detach().item(), batch_size)
+            if args.context_2d == 'unaligned' and args.obj_cls_alpha > 0:
+                cls_b_acc, _ = cls_pred_stats(res['class_logits_2d'], batch['class_labels'], ignore_label=pad_idx)
+                cls_acc_mtr_2d.update(cls_b_acc, batch_size)
+                obj_loss_mtr_2d.update(all_losses['obj_clf_loss_2d'].detach().item(), batch_size)
+
+            if args.lang_cls_alpha > 0 and (args.train_vis_enc_only == False):
+                batch_guess = torch.argmax(res['lang_logits'], -1)
+                cls_b_acc = torch.mean((batch_guess == batch['target_class']).double())
+                txt_acc_mtr.update(cls_b_acc, batch_size)
+
+            break
+        metrics['test_total_loss'] = total_loss_mtr.avg
         if args.train_vis_enc_only == False:
-            cls_b_acc, _ = cls_pred_stats(res['class_logits'], batch['class_labels'], ignore_label=pad_idx)
-            cls_acc_mtr.update(cls_b_acc, batch_size)
-            obj_loss_mtr.update(all_losses['obj_clf_loss'].detach().item(), batch_size)
+            metrics['test_referential_loss'] = referential_loss_mtr.avg
+            metrics['test_obj_clf_loss'] = obj_loss_mtr.avg
+            metrics['test_referential_acc'] = ref_acc_mtr.avg
+            metrics['test_object_cls_acc'] = cls_acc_mtr.avg
+            metrics['test_referential_loss_2d'] = referential_loss_mtr_2d.avg
+            metrics['test_referential_acc_2d'] = ref_acc_mtr_2d.avg
+            metrics['test_txt_cls_acc'] = txt_acc_mtr.avg
+        else:
+            metrics['test_referential_loss'] = 0
+            metrics['test_obj_clf_loss'] = 0
+            metrics['test_referential_acc'] = 0
+            metrics['test_object_cls_acc'] = 0
+            metrics['test_referential_loss_2d'] = 0
+            metrics['test_referential_acc_2d'] = 0
+            metrics['test_txt_cls_acc'] = 0
         if args.context_2d == 'unaligned' and args.obj_cls_alpha > 0:
-            cls_b_acc, _ = cls_pred_stats(res['class_logits_2d'], batch['class_labels'], ignore_label=pad_idx)
-            cls_acc_mtr_2d.update(cls_b_acc, batch_size)
-            obj_loss_mtr_2d.update(all_losses['obj_clf_loss_2d'].detach().item(), batch_size)
-
-        if args.lang_cls_alpha > 0 and (args.train_vis_enc_only == False):
-            batch_guess = torch.argmax(res['lang_logits'], -1)
-            cls_b_acc = torch.mean((batch_guess == batch['target_class']).double())
-            txt_acc_mtr.update(cls_b_acc, batch_size)
-
-    metrics['test_total_loss'] = total_loss_mtr.avg
-    if args.train_vis_enc_only == False:
-        metrics['test_referential_loss'] = referential_loss_mtr.avg
-        metrics['test_obj_clf_loss'] = obj_loss_mtr.avg
-        metrics['test_referential_acc'] = ref_acc_mtr.avg
-        metrics['test_object_cls_acc'] = cls_acc_mtr.avg
-        metrics['test_referential_loss_2d'] = referential_loss_mtr_2d.avg
-        metrics['test_referential_acc_2d'] = ref_acc_mtr_2d.avg
-        metrics['test_txt_cls_acc'] = txt_acc_mtr.avg
-    else:
-        metrics['test_referential_loss'] = 0
-        metrics['test_obj_clf_loss'] = 0
-        metrics['test_referential_acc'] = 0
-        metrics['test_object_cls_acc'] = 0
-        metrics['test_referential_loss_2d'] = 0
-        metrics['test_referential_acc_2d'] = 0
-        metrics['test_txt_cls_acc'] = 0
-    if args.context_2d == 'unaligned' and args.obj_cls_alpha > 0:
-        metrics['test_obj_clf_loss_2d'] = obj_loss_mtr_2d.avg
-        metrics['test_object_cls_acc_2d'] = cls_acc_mtr_2d.avg
-    if args.train_vis_enc_only:
-        metrics['test_obj_clf_loss'] = obj_loss_mtr_2d.avg
-        metrics['test_object_cls_acc'] = cls_acc_mtr_2d.avg
+            metrics['test_obj_clf_loss_2d'] = obj_loss_mtr_2d.avg
+            metrics['test_object_cls_acc_2d'] = cls_acc_mtr_2d.avg
+        if args.train_vis_enc_only:
+            metrics['test_obj_clf_loss'] = obj_loss_mtr_2d.avg
+            metrics['test_object_cls_acc'] = cls_acc_mtr_2d.avg
 
     return metrics
 

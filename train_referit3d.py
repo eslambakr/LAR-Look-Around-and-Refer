@@ -93,12 +93,13 @@ def main_worker(gpu, ngpus_per_node, args):
     # Prepare data & compute auxiliary meta-information.
     all_scans_in_dict = trim_scans_per_referit3d_data(referit_data, all_scans_in_dict)
     mean_rgb, vocab = compute_auxiliary_data(referit_data, all_scans_in_dict, args)
+    gen = torch.Generator()  # https://discuss.pytorch.org/t/does-a-dataloader-change-random-state-even-when-shuffle-argument-is-false/92569/4
     data_loaders, samplers = make_data_loaders(args, referit_data, vocab, class_to_idx,
-                                               all_scans_in_dict, mean_rgb)
+                                               all_scans_in_dict, mean_rgb, gen)
     # Prepare GPU environment
     # set_gpu_to_zero_position(args.gpu)  # Pnet++ seems to work only at "gpu:0"
     device = torch.device('cuda')
-    seed_training_code(args.random_seed)
+    seed_training_code(args.random_seed, gen=gen)
 
     # Losses:
     criteria = dict()
@@ -291,15 +292,14 @@ def main_worker(gpu, ngpus_per_node, args):
             print('Ready to *fine-tune* the model for a max of {} epochs'.format(dummy))
 
     if args.eval_path:
-        load_model = torch.load(args.eval_path)
-        pretrained_dict = load_model['model']
-        model_dict = model.state_dict()
-        # pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-        # TODO: E, should add support to eval in distributed mode
-        # Remove "module." if we train on distributed training and test on single GPU:
-        pretrained_dict = {key.replace("module.", ''): item for key, item in pretrained_dict.items()}
-        model_dict.update(pretrained_dict)
-        model.load_state_dict(model_dict)
+        load_model = torch.load(args.eval_path, map_location=device)
+        print("Loaded Epoch is:", load_model['epoch'])
+        if args.multiprocessing_distributed:
+            model.load_state_dict(load_model['model'], strict=True)
+        else:
+            pretrained_dict = load_model['model']
+            pretrained_dict = {key.replace("module.", ''): item for key, item in pretrained_dict.items()}
+            model.load_state_dict(pretrained_dict, strict=True)
         print("=> loaded pretrain model at {}".format(args.eval_path))
         if 'best' in load_model['lr_scheduler']:
             print('Loaded model had {} test-accuracy in the corresponding dataset used when trained.'.format(
@@ -317,12 +317,14 @@ def main_worker(gpu, ngpus_per_node, args):
             for epoch in bar:
                 # Train:
                 # epoch=epoch,
-                if args.warmup: scheduler_warmup.step(metrics=eval_acc)  ## using the previous epoch's metrics
+                if args.warmup:
+                    scheduler_warmup.step(metrics=eval_acc)  # using the previous epoch's metrics
                 # print('lr:', epoch, optimizer.param_groups[0]['lr'], optimizer.param_groups[1]['lr'])
 
                 if args.distributed:
                     samplers['train'].set_epoch(epoch)
-                    samplers['test'].set_epoch(epoch)
+
+                # Train:
                 tic = time.time()
                 train_meters = single_epoch_train(model, data_loaders['train'], criteria, optimizer,
                                                   device, pad_idx, args=args)
@@ -335,12 +337,13 @@ def main_worker(gpu, ngpus_per_node, args):
                 toc = time.time()
                 timings['test'] = (toc - tic) / 60
 
-                eval_acc = test_meters['test_referential_acc']
-                if not args.warmup: lr_scheduler.step(epoch=epoch, metrics=eval_acc)
-                # else: lr_scheduler.step(eval_acc)
-
                 if not args.multiprocessing_distributed or (
                         args.multiprocessing_distributed and args.rank % ngpus_per_node == 0):
+
+                    eval_acc = test_meters['test_referential_acc']
+                    if not args.warmup:
+                        lr_scheduler.step(epoch=epoch, metrics=eval_acc)
+                    # else: lr_scheduler.step(eval_acc)
 
                     if best_test_objClass_acc < test_meters['test_object_cls_acc']:
                         logger.info(colored('Object Class Test accuracy, improved @epoch {}'.format(epoch), 'green'))
@@ -388,6 +391,8 @@ def main_worker(gpu, ngpus_per_node, args):
         print('Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
         print('Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
         print('Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
+        print('Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
+        print('Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
 
         out_file = osp.join(args.checkpoint_dir, 'test_result.txt')
         res = analyze_predictions(model, data_loaders['test'].dataset, class_to_idx, pad_idx, device,

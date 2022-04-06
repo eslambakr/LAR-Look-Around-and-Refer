@@ -81,11 +81,13 @@ class ListeningDataset(Dataset):
         # Then all more objects up to max-number of distractors
         already_included = {target_label}
         clutter = [o for o in scan.three_d_objects if o.instance_label not in already_included]
-        np.random.shuffle(clutter)
+        if self.mode == "train":
+            np.random.shuffle(clutter)
 
         distractors.extend(clutter)
         distractors = distractors[:self.max_distractors]
-        np.random.shuffle(distractors)
+        if self.mode == "train":
+            np.random.shuffle(distractors)
 
         return distractors
 
@@ -573,7 +575,7 @@ class ListeningDataset(Dataset):
         return res
 
 
-def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, seed=None):
+def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, seed=None, gen=None):
     n_workers = args.n_workers
     if n_workers == -1:
         n_workers = max_io_workers()
@@ -585,7 +587,7 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
     splits = ['train', 'test']
 
     object_transformation = partial(mean_rgb_unit_norm_transform, mean_rgb=mean_rgb,
-                                    unit_norm=args.unit_sphere_norm)
+                                    unit_norm=args.unit_sphere_norm, inplace=False)
     for split in splits:
         mask = is_train if split == 'train' else ~is_train
         d_set = referit_data[mask]
@@ -636,11 +638,11 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
         if split == 'test':
             seed = args.random_seed
 
-        if args.distributed:
+        if args.distributed and split == 'train':  # E: Shouldn't distribute the data while testing
             samplers[split] = torch.utils.data.distributed.DistributedSampler(dataset)
         else:
             samplers[split] = None
         data_loaders[split] = dataset_to_dataloader(dataset, split, args.batch_size, n_workers, seed=seed,
-                                                    sampler=samplers[split])
+                                                    sampler=samplers[split], gen=gen)
 
     return data_loaders, samplers
