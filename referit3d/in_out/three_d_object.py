@@ -263,6 +263,9 @@ def project_pc_2_img(scan, obj, saving_pth, augment=True, cocoonAngles = [0]):
     # Take cocoon shots for the object: (Photo session :D)
     org_camera_pos = copy.deepcopy(camera_pos)
     for angle in cocoonAngles:
+        if augment:
+            added_angle = np.random.uniform(5, 25)
+            angle += added_angle
         camera_pos[:2] = get_point_on_circle(org_camera_pos[:2], O[:2], angle=angle * np.pi / 180)
         camera_pos[-1] = org_camera_pos[-1] + up_d  # lift the camera
 
@@ -361,14 +364,14 @@ class ThreeDObject(object):
             scansDataRoot = scan.top_scan_dir
             if scan.cocoon:
                 cocoonAngles = [0, 30, 60, -30, -60]
-                numImgPerObj = 50
+                numImgPerObj = self.scan.camaug
                 folderName = "images_cocoon_geo"
                 if scan.load_dense:
                     folderName += "_dense"
                 img_pth = os.path.join(scansDataRoot, scan.scan_id, folderName)
             else:
                 cocoonAngles = [0]
-                numImgPerObj = 100
+                numImgPerObj = self.scan.camaug
                 img_pth = os.path.join(scansDataRoot, scan.scan_id, "images_100")
 
             # create images folder:
@@ -382,8 +385,10 @@ class ThreeDObject(object):
             # Project PCs to N augmented images and save them:
             self.imgsPath = obj_pth
 
-            # if not path.exists(os.path.join(obj_pth, str(0))+"_"+str(0)+".jpg") and False:
-            if not "_00/" in os.path.join(obj_pth, str(0))+"_"+str(0)+".jpg":
+            # TODO: Eslam, I will clean this:
+            # Eslam: To generate Nr3d data add "and False" to generate data for "_00" files:
+            if not "_00/" in os.path.join(obj_pth, str(0))+"_"+str(0)+".jpg" and False:
+                """
                 project_pc_2_img(scan, obj=self, saving_pth=os.path.join(obj_pth, str(0)), augment=False,
                                  cocoonAngles=cocoonAngles)
                 """
@@ -393,6 +398,7 @@ class ThreeDObject(object):
                 """
                 project_pc_2_img(scan, obj=self, saving_pth=os.path.join(obj_pth, str(100)), augment=False,
                                  cocoonAngles=cocoonAngles)
+                """
 
             # Eslam: Instead of storing the whole points for each object,
             # store only sub-sample of it to make pkl smaller

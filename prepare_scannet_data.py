@@ -37,6 +37,8 @@ def parse_args():
     parser.add_argument('--cocoon', default=False, type=str2bool, help='Save cocoon images for each object')
     parser.add_argument('--twoStreams', default=False, type=str2bool, help='Save 2d images for each object and raw pc')
     parser.add_argument('--geo', default=False, type=str2bool, help='Save 2d images for each object and raw pc')
+    parser.add_argument('--camaug', default=0, type=int, help='number of camera augmented frames.'
+                                                              ' set it to 0 to deactivate camaug')
 
     ret = parser.parse_args()
 
@@ -70,6 +72,8 @@ if __name__ == '__main__':
         tag += '_twoStreams'
     if args.geo:
         tag += '_GEO'
+    if args.camaug:
+        tag += '_camaug'
 
     # Read all scan files.
     all_scan_ids = [osp.basename(i) for i in immediate_subdirectories(args.top_scan_dir)]
@@ -107,7 +111,7 @@ if __name__ == '__main__':
         print("scan_id = ", scan_id)
         scan_i = ScannetScan(scan_id, scannet, args.apply_global_alignment, load_dense=args.load_dense,
                              save_jpg=args.save_jpg, img_size=args.imgsize, top_scan_dir=args.top_scan_dir,
-                             cocoon=args.cocoon)
+                             cocoon=args.cocoon, camaug=args.camaug)
         if args.load_dense:
             scan_i.load_point_clouds_of_all_objects_dense()
         else:

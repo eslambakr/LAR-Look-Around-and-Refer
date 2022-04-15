@@ -54,9 +54,8 @@ class ScannetScan(object):
     object that exist in the scene, their semantic labels and their RGB color.
     """
 
-    #def __init__(self, scan_id, scannet_dataset, apply_global_alignment=True):
     def __init__(self, scan_id, scannet_dataset, apply_global_alignment=True, load_dense=False,
-                save_jpg=False, img_size=32, top_scan_dir=None, cocoon=False):
+                save_jpg=False, img_size=32, top_scan_dir=None, cocoon=False, camaug=0):
         """
             :param scan_id: (string) e.g. 'scene0705_00'
             :scannet_dataset: (ScannetDataset) captures the details about the class-names, top-directories etc.
@@ -68,6 +67,7 @@ class ScannetScan(object):
         self.top_scan_dir = top_scan_dir
         self.load_dense = load_dense
         self.cocoon = cocoon
+        self.camaug = camaug
         if load_dense:
             self.pc, self.semantic_label, self.color = \
                 self.load_point_cloud_with_meta_data_dense(apply_global_alignment=apply_global_alignment)
