@@ -98,7 +98,10 @@ def main_worker(gpu, ngpus_per_node, args):
                                                all_scans_in_dict, mean_rgb, gen)
     # Prepare GPU environment
     # set_gpu_to_zero_position(args.gpu)  # Pnet++ seems to work only at "gpu:0"
-    device = torch.device('cuda')
+    if args.distributed:
+        device = torch.device(args.gpu)
+    else:
+        device = torch.device('cuda')
     seed_training_code(args.random_seed, gen=gen)
 
     # Losses:
@@ -235,6 +238,10 @@ def main_worker(gpu, ngpus_per_node, args):
             # ourselves based on the total number of GPUs we have
             args.batch_size = int(args.batch_size / ngpus_per_node)
             # args.workers = int((args.workers + ngpus_per_node - 1) / ngpus_per_node)
+            # https://towardsdatascience.com/distributed-neural-network-training-in-pytorch-5e766e2a9e62
+            # https://pytorch.org/docs/stable/generated/torch.nn.SyncBatchNorm.html
+            # https://discuss.pytorch.org/t/save-model-for-distributeddataparallel/47129/7
+            model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
             model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
         else:
             model.cuda()
@@ -336,6 +343,17 @@ def main_worker(gpu, ngpus_per_node, args):
                 test_meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
                 toc = time.time()
                 timings['test'] = (toc - tic) / 60
+                print('GPU= ', args.gpu, 'Reference-Accuracy: {:.4f}'.format(test_meters['test_referential_acc']))
+                print('GPU= ', args.gpu, 'Object-Clf-Accuracy: {:.4f}'.format(test_meters['test_object_cls_acc']))
+                print('GPU= ', args.gpu, 'Text-Clf-Accuracy {:.4f}:'.format(test_meters['test_txt_cls_acc']))
+                print('GPU= ', args.gpu, 'Reference-Accuracy 2D: {:.4f}'.format(test_meters['test_referential_acc_2d']))
+                print('GPU= ', args.gpu, 'Object-Clf-Accuracy 2D: {:.4f}'.format(test_meters['test_object_cls_acc_2d']))
+                test_meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
+                print('GPU= ', args.gpu, 'again Reference-Accuracy: {:.4f}'.format(test_meters['test_referential_acc']))
+                print('GPU= ', args.gpu, 'again Object-Clf-Accuracy: {:.4f}'.format(test_meters['test_object_cls_acc']))
+                print('GPU= ', args.gpu, 'again Text-Clf-Accuracy {:.4f}:'.format(test_meters['test_txt_cls_acc']))
+                print('GPU= ', args.gpu, 'again Reference-Accuracy 2D: {:.4f}'.format(test_meters['test_referential_acc_2d']))
+                print('GPU= ', args.gpu, 'again Object-Clf-Accuracy 2D: {:.4f}'.format(test_meters['test_object_cls_acc_2d']))
 
                 if not args.multiprocessing_distributed or (
                         args.multiprocessing_distributed and args.rank % ngpus_per_node == 0):
@@ -380,6 +398,33 @@ def main_worker(gpu, ngpus_per_node, args):
                                     'red', attrs=['bold', 'underline']))
                         break
 
+                    test_meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
+                    print('again 3 Reference-Accuracy: {:.4f}'.format(test_meters['test_referential_acc']))
+                    print('again 3 Object-Clf-Accuracy: {:.4f}'.format(test_meters['test_object_cls_acc']))
+                    print('again 3 Text-Clf-Accuracy {:.4f}:'.format(test_meters['test_txt_cls_acc']))
+                    print('again 3 Reference-Accuracy 2D: {:.4f}'.format(test_meters['test_referential_acc_2d']))
+                    print('again 3 Object-Clf-Accuracy 2D: {:.4f}'.format(test_meters['test_object_cls_acc_2d']))
+
+                    load_model = torch.load(osp.join(args.checkpoint_dir, 'best_model.pth'), map_location=device)
+                    print("Loaded Epoch is:", load_model['epoch'])
+                    if args.multiprocessing_distributed:
+                        model.load_state_dict(load_model['model'], strict=True)
+                    else:
+                        pretrained_dict = load_model['model']
+                        pretrained_dict = {key.replace("module.", ''): item for key, item in pretrained_dict.items()}
+                        model.load_state_dict(pretrained_dict, strict=True)
+                    print("=> loaded pretrain model at {}".format(args.eval_path))
+                    if 'best' in load_model['lr_scheduler']:
+                        print(
+                            'Loaded model had {} test-accuracy in the corresponding dataset used when trained.'.format(
+                                load_model['lr_scheduler']['best']))
+                    test_meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
+                    print('again 4 Reference-Accuracy: {:.4f}'.format(test_meters['test_referential_acc']))
+                    print('again 4 Object-Clf-Accuracy: {:.4f}'.format(test_meters['test_object_cls_acc']))
+                    print('again 4 Text-Clf-Accuracy {:.4f}:'.format(test_meters['test_txt_cls_acc']))
+                    print('again 4 Reference-Accuracy 2D: {:.4f}'.format(test_meters['test_referential_acc_2d']))
+                    print('again 4 Object-Clf-Accuracy 2D: {:.4f}'.format(test_meters['test_object_cls_acc_2d']))
+
         with open(osp.join(args.checkpoint_dir, 'final_result.txt'), 'w') as f_out:
             msg = ('Best accuracy: {:.4f} (@epoch {})'.format(best_test_acc, best_test_epoch))
             f_out.write(msg)
@@ -387,12 +432,83 @@ def main_worker(gpu, ngpus_per_node, args):
         logger.info('Finished training successfully. Good job!')
 
     elif args.mode == 'evaluate':
+        meters = evaluate_on_dataset(model, data_loaders['train'], criteria, device, pad_idx, args=args)
+        print('Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
+        print('Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
+        print('Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
+        print('Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
+        print('Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
+        print("-------------------------------------------------------------------")
         meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
         print('Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
         print('Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
         print('Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
         print('Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
         print('Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
+        print("-------------------------------------------------------------------")
+        meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
+        print('2 Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
+        print('2 Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
+        print('2 Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
+        print('2 Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
+        print('2 Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
+        print("-------------------------------------------------------------------")
+        meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
+        print('3 Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
+        print('3 Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
+        print('3 Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
+        print('3 Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
+        print('3 Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
+        print("-------------------------------------------------------------------")
+        meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
+        print('4 Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
+        print('4 Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
+        print('4 Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
+        print('4 Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
+        print('4 Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
+        print("-------------------------------------------------------------------")
+        meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
+        print('5 Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
+        print('5 Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
+        print('5 Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
+        print('5 Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
+        print('5 Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
+        print("-------------------------------------------------------------------")
+        meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
+        print('6 Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
+        print('6 Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
+        print('6 Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
+        print('6 Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
+        print('6 Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
+        print("-------------------------------------------------------------------")
+        meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
+        print('7 Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
+        print('7 Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
+        print('7 Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
+        print('7 Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
+        print('7 Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
+        print("-------------------------------------------------------------------")
+        meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
+        print('8 Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
+        print('8 Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
+        print('8 Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
+        print('8 Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
+        print('8 Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
+        print("-------------------------------------------------------------------")
+        meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
+        print('9 Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
+        print('9 Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
+        print('9 Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
+        print('9 Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
+        print('9 Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
+        print("-------------------------------------------------------------------")
+        meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
+        print('10 Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
+        print('10 Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
+        print('10 Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
+        print('10 Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
+        print('10 Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
+        print("-------------------------------------------------------------------")
 
         out_file = osp.join(args.checkpoint_dir, 'test_result.txt')
         res = analyze_predictions(model, data_loaders['test'].dataset, class_to_idx, pad_idx, device,
@@ -401,6 +517,10 @@ def main_worker(gpu, ngpus_per_node, args):
 
 
 if __name__ == '__main__':
+    # print pytorch info:
+    print(torch.__version__)
+    print(" Number of available GPUs is: ", torch.cuda.device_count())
+    print(torch.cuda.is_available())
 
     # Parse arguments
     args = parse_arguments()

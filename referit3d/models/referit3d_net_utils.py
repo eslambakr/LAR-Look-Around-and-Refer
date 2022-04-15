@@ -256,18 +256,18 @@ def compute_losses(batch, res, criterion_dict, args):
     obj_clf_loss = lang_clf_loss = obj_clf_loss_2d = 0
     if args.obj_cls_alpha > 0:
         criterion = criterion_dict['class_logits']
-        torch.set_deterministic(False)
+        # torch.set_deterministic(False)
         obj_clf_loss = criterion(res['class_logits'].transpose(2, 1), batch['class_labels'])
-        torch.set_deterministic(True)
+        # torch.set_deterministic(True)
         if args.s_vs_n_weight is not None:
             obj_clf_loss = torch.mean(obj_clf_loss, dim=1) * weights
             obj_clf_loss = obj_clf_loss.sum() / len(obj_clf_loss)
         total_loss += obj_clf_loss * args.obj_cls_alpha
         if args.context_2d == 'unaligned':
             criterion = criterion_dict['class_logits_2d']
-            torch.set_deterministic(False)
+            # torch.set_deterministic(False)
             obj_clf_loss_2d = criterion(res['class_logits_2d'].transpose(2, 1), batch['class_labels'])
-            torch.set_deterministic(True)
+            # torch.set_deterministic(True)
             if args.s_vs_n_weight is not None:
                 obj_clf_loss_2d = torch.mean(obj_clf_loss_2d, dim=1) * weights
                 obj_clf_loss_2d = obj_clf_loss_2d.sum() / len(obj_clf_loss_2d)

@@ -29,8 +29,7 @@ def dataset_to_dataloader(dataset, split, batch_size, n_workers, sampler, pin_me
     :param seed:
     :return:
     """
-    batch_size_multiplier = 1 if split == 'train' else 2
-    # batch_size_multiplier = 1 if split == 'train' else 1
+    batch_size_multiplier = 1 if split == 'train' else 1
     b_size = int(batch_size_multiplier * batch_size)
 
     drop_last = False
@@ -43,12 +42,10 @@ def dataset_to_dataloader(dataset, split, batch_size, n_workers, sampler, pin_me
         if type(seed) is not int:
             warnings.warn('Test split is not seeded in a deterministic manner.')
 
-    shuffle = (split == 'train') and (sampler is None)
-
     data_loader = DataLoader(dataset,
                              batch_size=b_size,
                              num_workers=n_workers,
-                             shuffle=shuffle,
+                             shuffle=False,  # This is mandatory to set this to False here, shuffling is done by Sampler
                              drop_last=drop_last,
                              pin_memory=pin_memory,
                              generator=gen,

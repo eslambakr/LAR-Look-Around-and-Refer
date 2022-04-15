@@ -39,13 +39,16 @@ def seed_training_code(manual_seed, strict=True, gen=None):
     random.seed(manual_seed)
     np.random.seed(manual_seed)
     torch.manual_seed(manual_seed)
-    torch.cuda.manual_seed_all(manual_seed)  # https://discuss.pytorch.org/t/same-input-to-same-trained-model-producing-different-results-each-time/6704/15
+    # https://discuss.pytorch.org/t/same-input-to-same-trained-model-producing-different-results-each-time/6704/15
+    torch.cuda.manual_seed_all(manual_seed)
     # E: Fix it using https://discuss.pytorch.org/t/does-a-dataloader-change-random-state-even-when-shuffle-argument-is-false/92569/4
     gen.manual_seed(manual_seed)
     # torch.use_deterministic_algorithms()
-    torch.set_deterministic(True)
+    # torch.set_deterministic(True)
     if strict:
+        # https://discuss.pytorch.org/t/when-should-we-set-torch-backends-cudnn-enabled-to-false-especially-for-lstm/106571
         torch.backends.cudnn.enabled = False
+        # https://discuss.pytorch.org/t/what-does-torch-backends-cudnn-benchmark-do/5936
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
 
