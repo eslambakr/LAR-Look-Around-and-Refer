@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 
-def get_siamese_features(net, in_features, aggregator=None):
+def get_siamese_features(net, in_features, aggregator=None, mode=None):
     """ Applies a network in a siamese way, to 'each' in_feature independently
     :param net: nn.Module, Feat-Dim to new-Feat-Dim
     :param in_features: B x  N-objects x Feat-Dim
@@ -13,7 +13,10 @@ def get_siamese_features(net, in_features, aggregator=None):
     n_items = in_features.size(independent_dim)
     out_features = []
     for i in range(n_items):
-        out_features.append(net(in_features[:, i]))
+        if mode is not None:
+            out_features.append(net(in_features[:, i], mode=mode))
+        else:
+            out_features.append(net(in_features[:, i]))
     if aggregator is not None:
         out_features = aggregator(out_features, dim=independent_dim)
     return out_features

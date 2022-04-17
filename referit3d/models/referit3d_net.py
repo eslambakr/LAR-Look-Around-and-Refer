@@ -152,7 +152,7 @@ class MMT_ReferIt3DNet(nn.Module):
     def dummy_lambda(self):
         return None
 
-    def __call__(self, batch: dict) -> dict:
+    def __call__(self, batch: dict, mode) -> dict:
         # result = defaultdict(lambda: None)
         result = defaultdict(self.dummy_lambda)
         # 2D encoder:
@@ -181,7 +181,7 @@ class MMT_ReferIt3DNet(nn.Module):
         # 3D encoder:
         if self.args.twoStreams or not self.img_encoder:
             # Get features for each segmented scan object based on color and point-cloud
-            objects_pc_features = get_siamese_features(self.pc_object_encoder, batch['objects'],
+            objects_pc_features = get_siamese_features(self.pc_object_encoder, batch['objects'], mode=mode,
                                                        aggregator=torch.stack)  # B X N_Objects x object-latent-dim
 
         # Whole scene encoder:

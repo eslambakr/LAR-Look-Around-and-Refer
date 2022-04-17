@@ -88,7 +88,7 @@ def single_epoch_train(model, data_loader, criteria, optimizer, device, pad_idx,
                 batch['objects'] = batch['objects'].permute(0, 1, 3, 2).contiguous()
 
             # Forward pass
-            res = model(batch)
+            res = model(batch, mode="train")
 
             # Backward
             optimizer.zero_grad()
@@ -325,7 +325,7 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
                 batch['objects'] = batch['objects'].permute(0, 1, 3, 2).contiguous()
 
             # Forward pass
-            res = model(batch)
+            res = model(batch, mode="test")
 
             all_losses = compute_losses(batch, res, criteria, args)
 
@@ -424,7 +424,7 @@ def detailed_predictions_on_dataset(model, data_loader, args, device, FOR_VISUAL
             batch['objects'] = batch['objects'].permute(0, 1, 3, 2).contiguous()
 
         # Forward pass
-        out = model(batch)
+        out = model(batch, mode="test")
 
         if FOR_VISUALIZATION:
             n_ex = len(out['logits'])
@@ -492,7 +492,7 @@ def save_predictions_for_visualization(model, data_loader, device, channel_last,
             batch['objects'] = batch['objects'].permute(0, 1, 3, 2).contiguous()
 
         # Forward Pass
-        res = model(batch)
+        res = model(batch, mode="test")
 
         batch_size = batch['target_pos'].size(0)
         for i in range(batch_size):
