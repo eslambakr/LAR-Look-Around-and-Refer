@@ -338,12 +338,12 @@ class ListeningDataset(Dataset):
                                      A.RandomGamma(p=0.2)]),
                         ]
                     )
+                img_id = random.randint(0, 49)
+                # img_id = 0
                 if self.cocoon:
                     cocoonAngles = [0, 30, 60, -30, -60]
                     img = []
                     for angle in cocoonAngles:
-                        # img_id = random.randint(0, 99)
-                        img_id = 0
                         imgName = os.path.join(obj_pth, str(img_id)) + "_" + str(angle) + ".jpg"
                         imgTemp = cv2.imread(imgName)
                         imgTemp = cv2.resize(imgTemp, (desired_shape, desired_shape))
@@ -354,8 +354,6 @@ class ListeningDataset(Dataset):
                         imgTemp = imgTemp.astype(float) / 255
                         img.append(imgTemp)
                 else:
-                    # img_id = random.randint(1, 99)
-                    img_id = 0
                     angle = 0
                     imgName = os.path.join(obj_pth, str(img_id)) + "_" + str(angle) + ".jpg"
                     img = cv2.imread(imgName)
@@ -366,18 +364,17 @@ class ListeningDataset(Dataset):
 
                     img = img.astype(float) / 255
             else:
+                img_id = 100
                 if self.cocoon:
                     cocoonAngles = [0, 30, 60, -30, -60]
                     img = []
                     for angle in cocoonAngles:
-                        img_id = 100
                         imgName = os.path.join(obj_pth, str(img_id)) + "_" + str(angle) + ".jpg"
                         imgTemp = cv2.imread(imgName)
                         imgTemp = cv2.resize(imgTemp, (desired_shape, desired_shape))
                         imgTemp = imgTemp.astype(float) / 255
                         img.append(imgTemp)
                 else:
-                    img_id = 100
                     angle = 0
                     imgName = os.path.join(obj_pth, str(img_id)) + "_" + str(angle) + ".jpg"
                     img = cv2.imread(imgName)

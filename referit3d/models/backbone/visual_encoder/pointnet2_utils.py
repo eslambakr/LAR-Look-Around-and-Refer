@@ -76,10 +76,11 @@ def farthest_point_sample(xyz, npoint, mode="train"):
     B, N, C = xyz.shape
     centroids = torch.zeros(B, npoint, dtype=torch.long).to(device)
     distance = torch.ones(B, N).to(device) * 1e10
-    # TODO: Elsam-Yasmeen Should study the effect of fixing it.
+    # TODO: Eslam-Yasmeen Should study the effect of fixing it.
     # https://jskhu.github.io/fps/3d/object/detection/2020/09/20/farthest-point-sampling.html
+    # https://minibatchai.com/ai/2021/08/07/FPS.html
     # one possible solution to fix it during testing only
-    if mode=="train":
+    if mode == "train":
         farthest = torch.randint(0, N, (B,), dtype=torch.long).to(device)
     else:
         farthest = torch.full((B,), 5, dtype=torch.long).to(device)

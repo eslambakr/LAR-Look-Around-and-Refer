@@ -364,7 +364,6 @@ def evaluate_on_dataset(model, data_loader, criteria, device, pad_idx, args, ran
                 cls_b_acc = torch.mean((batch_guess == batch['target_class']).double())
                 txt_acc_mtr.update(cls_b_acc, batch_size)
 
-            break
         metrics['test_total_loss'] = total_loss_mtr.avg
         if args.train_vis_enc_only == False:
             metrics['test_referential_loss'] = referential_loss_mtr.avg
