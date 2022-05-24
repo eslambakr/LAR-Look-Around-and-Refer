@@ -39,6 +39,8 @@ def parse_args():
     parser.add_argument('--geo', default=False, type=str2bool, help='Save 2d images for each object and raw pc')
     parser.add_argument('--camaug', default=0, type=int, help='number of camera augmented frames.'
                                                               ' set it to 0 to deactivate camaug')
+    parser.add_argument('--savepickle', default=True, type=str2bool, help='This flag indicates whether u wanna save'
+                                                                          ' a pickle or not')
 
     ret = parser.parse_args()
 
@@ -146,15 +148,16 @@ if __name__ == '__main__':
             print("Loading raw data took {:.4} minutes.".format((time.time() - start_time) / 60.0))
 
         # Save data
-        if args.verbose:
-            print('Saving the results.')
-        all_scans = list(all_scans.values())
-        save_dir = create_dir(osp.join(args.top_save_dir, tag))
-        if args.load_dense:
-            save_file = osp.join(save_dir, tag + "_" + str(id) + '.pkl')
-        else:
-            save_file = osp.join(save_dir, tag + '.pkl')
-        pickle_data(save_file, scannet, all_scans)
+        if args.savepickle:
+            if args.verbose:
+                print('Saving the results.')
+            all_scans = list(all_scans.values())
+            save_dir = create_dir(osp.join(args.top_save_dir, tag))
+            if args.load_dense:
+                save_file = osp.join(save_dir, tag + "_" + str(id) + '.pkl')
+            else:
+                save_file = osp.join(save_dir, tag + '.pkl')
+            pickle_data(save_file, scannet, all_scans)
         print("Finish processing of id = ", id)
 
     if args.verbose:
