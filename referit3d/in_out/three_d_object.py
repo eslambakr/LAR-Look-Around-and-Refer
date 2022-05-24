@@ -265,8 +265,10 @@ def project_pc_2_img(scan, obj, saving_pth, augment=True, cocoonAngles = [0]):
     for angle in cocoonAngles:
         if augment:
             added_angle = np.random.uniform(5, 25)
-            angle += added_angle
-        camera_pos[:2] = get_point_on_circle(org_camera_pos[:2], O[:2], angle=angle * np.pi / 180)
+            added_angle += angle
+        else:
+            added_angle = angle
+        camera_pos[:2] = get_point_on_circle(org_camera_pos[:2], O[:2], angle=added_angle * np.pi / 180)
         camera_pos[-1] = org_camera_pos[-1] + up_d  # lift the camera
 
         m = lookat(camera_pos, O, up_vector)
@@ -362,16 +364,15 @@ class ThreeDObject(object):
         self.img = None
         if scan.save_jpg:
             scansDataRoot = scan.top_scan_dir
+            numImgPerObj = self.scan.camaug
             if scan.cocoon:
                 cocoonAngles = [0, 30, 60, -30, -60]
-                numImgPerObj = self.scan.camaug
                 folderName = "images_cocoon_geo"
                 if scan.load_dense:
                     folderName += "_dense"
                 img_pth = os.path.join(scansDataRoot, scan.scan_id, folderName)
             else:
                 cocoonAngles = [0]
-                numImgPerObj = self.scan.camaug
                 img_pth = os.path.join(scansDataRoot, scan.scan_id, "images_100")
 
             # create images folder:
@@ -386,13 +387,14 @@ class ThreeDObject(object):
             self.imgsPath = obj_pth
 
             # TODO: Eslam, I will clean this:
-            # Eslam: To generate Nr3d data add "and False" to generate data for "_00" files:
-            if not "_00/" in os.path.join(obj_pth, str(0))+"_"+str(0)+".jpg" and False:
+            # Eslam: To generate Nr3d data add "or True" to generate data for "_00" files:
+            if not "_00/" in os.path.join(obj_pth, str(0))+"_"+str(0)+".jpg" or True:
                 """
                 project_pc_2_img(scan, obj=self, saving_pth=os.path.join(obj_pth, str(0)), augment=False,
                                  cocoonAngles=cocoonAngles)
                 """
-                for i in range(1, numImgPerObj):
+                start = 100
+                for i in range(start+1, start+numImgPerObj+1):
                     imgName = os.path.join(obj_pth, str(i))
                     project_pc_2_img(scan, obj=self, saving_pth=imgName, augment=True, cocoonAngles=cocoonAngles)
                 """
