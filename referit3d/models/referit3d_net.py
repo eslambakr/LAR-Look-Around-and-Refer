@@ -75,6 +75,14 @@ class MMT_ReferIt3DNet(nn.Module):
             self.obj_feat_layer_norm = BertLayerNorm(MMT_HIDDEN_SIZE)
             self.obj_bbox_layer_norm = BertLayerNorm(MMT_HIDDEN_SIZE)
             self.obj_drop = nn.Dropout(0.1)
+            if args.geo3d:
+                self.linear_obj_3dgeofeat_to_mmt_in = nn.Linear(MMT_HIDDEN_SIZE+24, MMT_HIDDEN_SIZE)
+                self.obj_3dgeofeat_feat_layer_norm = BertLayerNorm(MMT_HIDDEN_SIZE)
+
+            if self.args.clspred3d:
+                print("3D Cls_Pred is activated !!!!")
+                self.linear_3d_feat_to_mmt_in_clspred = nn.Linear(MMT_HIDDEN_SIZE+self.num_class_dim-1, MMT_HIDDEN_SIZE)
+                self.obj3d_feat_layer_norm_clspred = BertLayerNorm(MMT_HIDDEN_SIZE)
 
             # Encoders for text
             self.text_bert_config = BertConfig(
@@ -197,6 +205,10 @@ class MMT_ReferIt3DNet(nn.Module):
         if self.train_vis_enc_only == False:
             obj_mmt_in = self.obj_feat_layer_norm(self.linear_obj_feat_to_mmt_in(objects_pc_features)) + \
                          self.obj_bbox_layer_norm(self.linear_obj_bbox_to_mmt_in(batch['obj_offset']))
+            batch['objectsGeo'] = batch['objectsGeo'].type(torch.FloatTensor).to(obj_mmt_in.device)
+            if self.args.geo3d:
+                obj_mmt_in = torch.cat((obj_mmt_in, batch['objectsGeo'][:, :, :24]), -1)
+                obj_mmt_in = self.obj_3dgeofeat_feat_layer_norm(self.linear_obj_3dgeofeat_to_mmt_in(obj_mmt_in))
 
             if self.context_2d == 'aligned':
                 obj_mmt_in = obj_mmt_in
@@ -219,7 +231,6 @@ class MMT_ReferIt3DNet(nn.Module):
             else:
                 feat_2d = objects_img_features
 
-            batch['objectsGeo'] = batch['objectsGeo'].type(torch.FloatTensor).to(feat_2d.device)
             if self.args.cocoon:
                 batch['objectsGeo'] = batch['objectsGeo'][:, :, 0, :]
             if 'Geo' in (self.args.feat2d.replace('3D', '')):
@@ -257,6 +268,10 @@ class MMT_ReferIt3DNet(nn.Module):
             if 'clspred' in (self.args.feat2d.replace('3D', '')):
                 context_obj_mmt_in = torch.cat((context_obj_mmt_in, result['class_logits_2d']), -1)
                 context_obj_mmt_in = self.obj2d_feat_layer_norm_clspred(self.linear_2d_feat_to_mmt_in_clspred(context_obj_mmt_in))
+
+            if self.args.clspred3d:
+                obj_mmt_in = torch.cat((obj_mmt_in, result['class_logits']), -1)
+                obj_mmt_in = self.obj3d_feat_layer_norm_clspred(self.linear_3d_feat_to_mmt_in_clspred(obj_mmt_in))
 
         # Get feature for utterance
         txt_inds = batch["token_inds"]  # batch_size, lang_size

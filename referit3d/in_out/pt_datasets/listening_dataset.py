@@ -338,8 +338,8 @@ class ListeningDataset(Dataset):
                                      A.RandomGamma(p=0.2)]),
                         ]
                     )
-                img_id = random.randint(0, 49)
-                # img_id = 0
+                # img_id = random.randint(0, 49)
+                img_id = 0
                 if self.cocoon:
                     cocoonAngles = [0, 30, 60, -30, -60]
                     img = []

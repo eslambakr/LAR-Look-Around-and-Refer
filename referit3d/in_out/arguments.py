@@ -119,6 +119,10 @@ def parse_arguments(notebook_options=None):
     parser.add_argument('--context_2d', type=str, default=None,
                         help="how to use 2D context; None, aligned or unaligned.")
     parser.add_argument('--mmt_mask', type=str, default=None, help="if apply certain mmt mask.")
+    parser.add_argument('--geo3d', type=str2bool, default=False, help="If set the 3D geometry info will be added"
+                                                                      " to the 3D branch")
+    parser.add_argument('--clspred3d', type=str2bool, default=False, help="If set the 3D predicted class info "
+                                                                          "will be added to the 3D branch.")
 
     # Distributed Training:
     parser.add_argument('--world-size', default=-1, type=int,
