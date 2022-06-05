@@ -25,7 +25,7 @@ class ListeningDataset(Dataset):
                  class_to_idx=None, object_transformation=None,
                  visualization=False, feat2dtype=None,
                  num_class_dim=525, evalmode=False, img_enc=False, load_imgs=False, mode=None, imgsize=32,
-                 train_vis_enc_only=False, cocoon=False,
+                 train_vis_enc_only=False, cocoon=False, imgaug=False, camaug=False,
                  twoStreams=False, sceneCocoonPath=None, context_info_2d_cached_file="None"):
 
         self.references = references
@@ -44,6 +44,8 @@ class ListeningDataset(Dataset):
         self.imgsize = imgsize
         self.train_vis_enc_only = train_vis_enc_only
         self.cocoon = cocoon
+        self.imgaug = imgaug
+        self.camaug = camaug
         self.twoStreams = twoStreams
         self.sceneCocoonPath = sceneCocoonPath
         self.feat2dtype = feat2dtype
@@ -317,10 +319,9 @@ class ListeningDataset(Dataset):
         for i, obj in enumerate(scan.three_d_objects):
             obj_pth = obj.imgsPath
             if self.mode == "train":
-                augment = True
                 train_transform = None
                 # Augmentation:
-                if augment:
+                if self.imgaug:
                     train_transform = A.Compose(
                         [
                             A.OneOf([A.ShiftScaleRotate(shift_limit=0.05, scale_limit=0.05, rotate_limit=15, p=0.5),
@@ -338,8 +339,10 @@ class ListeningDataset(Dataset):
                                      A.RandomGamma(p=0.2)]),
                         ]
                     )
-                # img_id = random.randint(0, 49)
-                img_id = 0
+                if self.camaug:
+                    img_id = random.randint(0, 49)
+                else:
+                    img_id = 0
                 if self.cocoon:
                     cocoonAngles = [0, 30, 60, -30, -60]
                     img = []
@@ -627,6 +630,8 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
                                    evalmode=(args.mode == 'evaluate'),
                                    train_vis_enc_only=args.train_vis_enc_only,
                                    cocoon=args.cocoon,
+                                   imgaug=args.imgaug,
+                                   camaug=args.camaug,
                                    twoStreams=args.twoStreams,
                                    sceneCocoonPath=args.sceneCocoonPath,
                                    context_info_2d_cached_file=args.context_info_2d_cached_file)

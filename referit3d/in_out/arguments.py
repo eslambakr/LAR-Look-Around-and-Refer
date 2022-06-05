@@ -123,6 +123,8 @@ def parse_arguments(notebook_options=None):
                                                                       " to the 3D branch")
     parser.add_argument('--clspred3d', type=str2bool, default=False, help="If set the 3D predicted class info "
                                                                           "will be added to the 3D branch.")
+    parser.add_argument('--imgaug', type=str2bool, default=False, help="If set the imgaug will be activated.")
+    parser.add_argument('--camaug', type=str2bool, default=False, help="If set the camaug will be activated.")
 
     # Distributed Training:
     parser.add_argument('--world-size', default=-1, type=int,

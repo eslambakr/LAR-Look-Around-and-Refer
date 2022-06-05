@@ -338,14 +338,13 @@ def main_worker(gpu, ngpus_per_node, args):
                 toc = time.time()
                 timings['train'] = (toc - tic) / 60
 
-                # Evaluate:
-                tic = time.time()
-                test_meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
-                toc = time.time()
-                timings['test'] = (toc - tic) / 60
-
                 if not args.multiprocessing_distributed or (
                         args.multiprocessing_distributed and args.rank % ngpus_per_node == 0):
+                    # Evaluate:
+                    tic = time.time()
+                    test_meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
+                    toc = time.time()
+                    timings['test'] = (toc - tic) / 60
 
                     eval_acc = test_meters['test_referential_acc']
                     if not args.warmup:
@@ -394,25 +393,27 @@ def main_worker(gpu, ngpus_per_node, args):
         logger.info('Finished training successfully. Good job!')
 
     elif args.mode == 'evaluate':
-        meters = evaluate_on_dataset(model, data_loaders['train'], criteria, device, pad_idx, args=args)
-        print('Training Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
-        print('Training Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
-        print('Training Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
-        print('Training Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
-        print('Training Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
-        print("-------------------------------------------------------------------")
-        meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
-        print('Testing Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
-        print('Testing Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
-        print('Testing Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
-        print('Testing Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
-        print('Testing Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
-        print("-------------------------------------------------------------------")
+        if not args.multiprocessing_distributed or (
+                args.multiprocessing_distributed and args.rank % ngpus_per_node == 0):
+            meters = evaluate_on_dataset(model, data_loaders['train'], criteria, device, pad_idx, args=args)
+            print('Training Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
+            print('Training Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
+            print('Training Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
+            print('Training Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
+            print('Training Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
+            print("-------------------------------------------------------------------")
+            meters = evaluate_on_dataset(model, data_loaders['test'], criteria, device, pad_idx, args=args)
+            print('Testing Reference-Accuracy: {:.4f}'.format(meters['test_referential_acc']))
+            print('Testing Object-Clf-Accuracy: {:.4f}'.format(meters['test_object_cls_acc']))
+            print('Testing Text-Clf-Accuracy {:.4f}:'.format(meters['test_txt_cls_acc']))
+            print('Testing Reference-Accuracy 2D: {:.4f}'.format(meters['test_referential_acc_2d']))
+            print('Testing Object-Clf-Accuracy 2D: {:.4f}'.format(meters['test_object_cls_acc_2d']))
+            print("-------------------------------------------------------------------")
 
-        out_file = osp.join(args.checkpoint_dir, 'test_result.txt')
-        res = analyze_predictions(model, data_loaders['test'].dataset, class_to_idx, pad_idx, device,
-                                  args, out_file=out_file)
-        print(res)
+            out_file = osp.join(args.checkpoint_dir, 'test_result.txt')
+            res = analyze_predictions(model, data_loaders['test'].dataset, class_to_idx, pad_idx, device,
+                                      args, out_file=out_file)
+            print(res)
 
 
 if __name__ == '__main__':
