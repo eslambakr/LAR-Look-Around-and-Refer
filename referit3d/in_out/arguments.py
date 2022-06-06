@@ -46,6 +46,8 @@ def parse_arguments(notebook_options=None):
                                                                                'for cls&ref losses for 2D&3D')
     parser.add_argument('--tripleloss', default=False, type=str2bool, help='Use tripleLoss to mitigate '
                                                                            'the distractor effect.')
+    parser.add_argument('--contrastiveloss', default=False, type=str2bool, help='Use contrastiveloss to mitigate the'
+                                                                                ' distractor effect.')
     parser.add_argument('--eval-path', type=str, help='Path for best model to evaluate on it')
     parser.add_argument('--train-scanRefer', default=False, type=str2bool, help='to load scanRefer data')
     parser.add_argument('--feat2ddim', default=2048, type=int, help='2D feature dim')

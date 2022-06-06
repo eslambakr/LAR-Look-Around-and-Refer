@@ -2,6 +2,7 @@ import random
 import torch
 import time
 import os
+import copy
 import numpy as np
 from torch.utils.data import Dataset
 from functools import partial
@@ -26,7 +27,8 @@ class ListeningDataset(Dataset):
                  visualization=False, feat2dtype=None,
                  num_class_dim=525, evalmode=False, img_enc=False, load_imgs=False, mode=None, imgsize=32,
                  train_vis_enc_only=False, cocoon=False, imgaug=False, camaug=False,
-                 twoStreams=False, sceneCocoonPath=None, context_info_2d_cached_file="None"):
+                 twoStreams=False, sceneCocoonPath=None, context_info_2d_cached_file="None",
+                 tripleloss=False, contrastiveloss=False):
 
         self.references = references
         self.scans = scans
@@ -53,6 +55,8 @@ class ListeningDataset(Dataset):
         self.num_class_dim = num_class_dim
         self.evalmode = evalmode
         self.context_info_2d_cached_file = context_info_2d_cached_file
+        self.tripleloss = tripleloss
+        self.contrastiveloss = contrastiveloss
 
         self.bert_tokenizer = BertTokenizer.from_pretrained(
             'bert-base-uncased')
@@ -399,14 +403,10 @@ class ListeningDataset(Dataset):
                 cocoonAngles = [0, 30, 60, -30, -60]
                 geoInfo = []
                 for angle in cocoonAngles:
-                    # img_id = random.randint(0, 99)
-
                     npGeoFilePath = os.path.join(obj_pth, str(img_id)) + "_" + str(angle) + ".npy"
                     geo_info = np.load(npGeoFilePath)
                     geoInfo.append(geo_info)
             else:
-                # img_id = random.randint(1, 99)
-                img_id = 0
                 angle = 0
                 npGeoFilePath = os.path.join(obj_pth, str(img_id)) + "_" + str(angle) + ".npy"
                 geoInfo = np.load(npGeoFilePath)
@@ -438,6 +438,14 @@ class ListeningDataset(Dataset):
         indices = indices[:self.max_seq_len]
         token_inds[:len(indices)] = torch.tensor(indices)
         token_num = torch.tensor(len(indices), dtype=torch.long)
+
+        # Add positive sample for triplet loss:
+        # I think we can not add positive sample as geometry part will be matched.
+        # which, I think will affect the training in a negative way, as the model will memorize the right object
+        # occurs twice.
+        if self.tripleloss:
+            positive_sample = copy.deepcopy(target)
+            scan.three_d_objects.append(positive_sample)
 
         # Generate 2d image projected from 3d point clouds
         if self.img_enc and not self.load_imgs:
@@ -501,6 +509,13 @@ class ListeningDataset(Dataset):
         res['token_inds'] = token_inds.numpy().astype(np.int64)
         res['token_num'] = token_num.numpy().astype(np.int64)
         res['is_nr3d'] = is_nr3d
+        if self.tripleloss or self.contrastiveloss:
+            temp = np.zeros(res['objects'].shape[0], dtype=res['objects'].dtype)
+            res['distractors_idx'] = [i for i, o in enumerate(context) if
+                                      (o.instance_label == target.instance_label and (o != target))]
+            temp[res['distractors_idx']] = True
+            res['distractors_idx'] = temp
+
 
         if self.visualization:
             distrators_pos = np.zeros((6))  # 6 is the maximum context size we used in dataset collection
@@ -634,7 +649,9 @@ def make_data_loaders(args, referit_data, vocab, class_to_idx, scans, mean_rgb, 
                                    camaug=args.camaug,
                                    twoStreams=args.twoStreams,
                                    sceneCocoonPath=args.sceneCocoonPath,
-                                   context_info_2d_cached_file=args.context_info_2d_cached_file)
+                                   context_info_2d_cached_file=args.context_info_2d_cached_file,
+                                   tripleloss=args.tripleloss,
+                                   contrastiveloss=args.contrastiveloss)
 
         seed = None
         if split == 'test':

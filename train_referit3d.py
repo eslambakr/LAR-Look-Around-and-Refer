@@ -6,7 +6,7 @@
 2) To run our 2d Features (clssonly):
 --patience 100 --max-train-epochs 100 --init-lr 1e-4 --batch-size 2 --n-workers 2 --transformer --model mmt_referIt3DNet -scannet-file /home/e/scannet_dataset/scannet/scan_4_nr3d/keep_all_points_00_view_no_global_scan_alignment_saveJPG_cocoon_twoStreams.pkl -referit3D-file /home/e/scannet_dataset/scannet/nr3d.csv --log-dir ../del --unit-sphere-norm True --feat2d clsvecROI --context_2d unaligned --mmt_mask train2d --warmup -load-imgs True --img-encoder True --object-encoder convnext -load-dense False --train-vis-enc-only True --imgsize 32 --cocoon False --twoStreams False
 3) To run our 2d features (E2E):
---patience 100 --max-train-epochs 100 --init-lr 1e-4 --batch-size 2 --n-workers 2 --transformer --model mmt_referIt3DNet -scannet-file /home/e/scannet_dataset/scannet/scan_4_nr3d/keep_all_points_00_view_no_global_scan_alignment_saveJPG_cocoon_twoStreams.pkl -referit3D-file /home/e/scannet_dataset/scannet/nr3d.csv --log-dir ../del --unit-sphere-norm True --feat2d clsvecROI --context_2d unaligned --mmt_mask train2d --warmup -load-imgs True --img-encoder True --object-encoder convnext_p++ -load-dense False --train-vis-enc-only False --imgsize 32 --cocoon False --twoStreams True
+-scannet-file /home/e/scannet_dataset/scannet/scan_4_nr3d/keep_all_points_00_view_no_global_scan_alignment_saveJPG_cocoon_twoStreams/keep_all_points_00_view_no_global_scan_alignment_saveJPG_cocoon_twoStreams.pkl -referit3D-file /home/e/scannet_dataset/scannet/nr3d.csv --log-dir ../log/referit3d_r18_32_loadimgs --n-workers 2 --batch-size 2 -load-imgs True --img-encoder True --object-encoder convnext_p++ -load-dense False --train-vis-enc-only False --cocoon False --twoStreams True --obj-cls-alpha 5 --unit-sphere-norm True --feat2d ROIGeoclspred --context_2d unaligned --mmt_mask train2d --warmup --transformer --model mmt_referIt3DNet --twoTrans True --sharetwoTrans False --tripleloss False --init-lr 0.0001 --feat2ddim 2048 --imgsize 32
 """
 import os
 import sys
@@ -128,6 +128,12 @@ def main_worker(gpu, ngpus_per_node, args):
         if args.twoTrans:
             criteria['logits_early'] = nn.CrossEntropyLoss().to(device)  # 3D Early Ref Loss
     criteria['logits_nondec'] = nn.CrossEntropyLoss(reduction='none').to(device)
+
+    # Contrastive loss between target and distractors:
+    if args.contrastiveloss:
+        from referit3d.losses.contrastive_loss import ContrastiveLoss
+        criteria['contrastiveloss_3d'] = ContrastiveLoss(margin=3)
+        criteria['contrastiveloss_2d'] = ContrastiveLoss(margin=3)
 
     # Object-type classification
     if args.obj_cls_alpha > 0:

@@ -252,6 +252,16 @@ def compute_losses(batch, res, criterion_dict, args):
         total_loss = total_loss * weights
         total_loss = total_loss.sum() / len(total_loss)
 
+    # Contrastive loss between target and distractors:
+    if args.contrastiveloss:
+        distractors_contrast_loss_3d = criterion_dict['contrastiveloss_3d'](features=res['mmt_obj_output'],
+                                                                            target_idx=batch['target_pos'],
+                                                                            distractors_idx=batch['distractors_idx'])
+        distractors_contrast_loss_2d = criterion_dict['contrastiveloss_2d'](features=res['mmt_obj_output_2D'],
+                                                                            target_idx=batch['target_pos'],
+                                                                            distractors_idx=batch['distractors_idx'])
+        total_loss = total_loss + distractors_contrast_loss_3d + distractors_contrast_loss_2d
+
     # Cls Losses:
     obj_clf_loss = lang_clf_loss = obj_clf_loss_2d = 0
     if args.obj_cls_alpha > 0:
@@ -445,7 +455,7 @@ def detailed_predictions_on_dataset(model, data_loader, args, device, FOR_VISUAL
         distractor_impact = class_labels[mask, predictions[mask].cpu().numpy()] == class_labels[
             mask, batch['target_pos'][mask].cpu().numpy()]
         count = np.count_nonzero(distractor_impact)
-        distractor_impact_ratio = 100*count/len(distractor_impact)
+        distractor_impact_ratio = 100 * count / len(distractor_impact)
         res['distractor_impact_ratio'].append(distractor_impact_ratio)
 
         if FOR_VISUALIZATION:
