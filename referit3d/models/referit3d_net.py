@@ -374,12 +374,12 @@ def instantiate_referit3d_net(args: argparse.Namespace, vocab: Vocabulary, n_obj
     # Optional, make a bbox encoder
     if args.obj_cls_alpha > 0:
         print('Adding an object-classification loss.')
-        if args.tripleloss:
+        if args.softtripleloss:
             object_clf = object_decoder_for_clf(geo_out_dim, 128)  # 3D head
         else:
             object_clf = object_decoder_for_clf(geo_out_dim, n_obj_classes)  # 3D head
         if args.context_2d == 'unaligned':
-            if args.tripleloss:
+            if args.softtripleloss:
                 object_clf_2D = object_decoder_for_clf(geo_out_dim, 128)  # 2D head
             else:
                 object_clf_2D = object_decoder_for_clf(geo_out_dim, n_obj_classes)  # 2D head

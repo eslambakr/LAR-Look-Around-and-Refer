@@ -133,7 +133,7 @@ def main_worker(gpu, ngpus_per_node, args):
     if args.obj_cls_alpha > 0:
         reduction = 'mean' if args.s_vs_n_weight is None else 'none'
         if args.train_vis_enc_only == False:
-            if args.tripleloss:
+            if args.softtripleloss:
                 criteria['class_logits'] = SoftTriple(20, 0.1, 0.2, 0.01, dim=128, cN=len(class_to_idx), K=10,
                                                       class_to_ignore=class_to_idx['pad'],
                                                       reduction=reduction, device=device).to(device)
@@ -145,7 +145,7 @@ def main_worker(gpu, ngpus_per_node, args):
             criteria['logits_2d'] = nn.CrossEntropyLoss().to(device)  # 2D Ref Loss
             if args.twoTrans:
                 criteria['logits_2d_early'] = nn.CrossEntropyLoss().to(device)  # 2D Early Ref Loss
-            if args.tripleloss:
+            if args.softtripleloss:
                 criteria['class_logits_2d'] = SoftTriple(20, 0.1, 0.2, 0.01, dim=128, cN=len(class_to_idx), K=10,
                                                          class_to_ignore=class_to_idx['pad'],
                                                          reduction=reduction, device=device).to(device)

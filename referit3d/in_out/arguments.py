@@ -42,8 +42,10 @@ def parse_arguments(notebook_options=None):
                         help='path to the 2d cocoon images for the whole scene')
     parser.add_argument('--twoTrans', default=False, type=str2bool, help='Use 2 trans. (vision Trans + Lang Trans')
     parser.add_argument('--sharetwoTrans', default=False, type=str2bool, help='Share VisLang trans between 2D & 3D')
-    parser.add_argument('--tripleloss', default=False, type=str2bool, help='Use tripleLoss instead of softmax for'
-                                                                           ' cls&ref losses for 2D&3D')
+    parser.add_argument('--softtripleloss', default=False, type=str2bool, help='Use softtripleLoss instead of softmax '
+                                                                               'for cls&ref losses for 2D&3D')
+    parser.add_argument('--tripleloss', default=False, type=str2bool, help='Use tripleLoss to mitigate '
+                                                                           'the distractor effect.')
     parser.add_argument('--eval-path', type=str, help='Path for best model to evaluate on it')
     parser.add_argument('--train-scanRefer', default=False, type=str2bool, help='to load scanRefer data')
     parser.add_argument('--feat2ddim', default=2048, type=int, help='2D feature dim')
