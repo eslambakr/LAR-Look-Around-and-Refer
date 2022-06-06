@@ -42,7 +42,8 @@ def analyze_predictions(model, dataset, class_to_idx, pad_idx, device, args, out
             samplers = torch.utils.data.distributed.DistributedSampler(dataset)
         else:
             samplers = None
-        d_loader = dataset_to_dataloader(dataset, 'test', args.batch_size, n_workers=5, seed=seed, sampler=samplers)
+        d_loader = dataset_to_dataloader(dataset, 'test', args.batch_size, n_workers=args.n_workers, seed=seed,
+                                         sampler=samplers)
         assert d_loader.dataset.references is references
         net_stats = detailed_predictions_on_dataset(model, d_loader, args=args, device=device, FOR_VISUALIZATION=True)
         net_stats_all_seed.append(net_stats)
@@ -58,6 +59,7 @@ def analyze_predictions(model, dataset, class_to_idx, pad_idx, device, args, out
     easy_acc = []
     hard_acc = []
     among_true_acc = []
+    distractor_impact_ratio = []
 
     for stats in net_stats_all_seed:
         got_it_right = stats['guessed_correctly']
@@ -66,13 +68,15 @@ def analyze_predictions(model, dataset, class_to_idx, pad_idx, device, args, out
         view_indep_acc.append(got_it_right[~view_dep_mask].mean() * 100)
         easy_acc.append(got_it_right[easy_context_mask].mean() * 100)
         hard_acc.append(got_it_right[~easy_context_mask].mean() * 100)
+        distractor_impact_ratio.append(stats['distractor_impact_ratio'].mean())
 
         got_it_right = stats['guessed_correctly_among_true_class']
         among_true_acc.append(got_it_right.mean() * 100)
 
     acc_df = pd.DataFrame({'hard': hard_acc, 'easy': easy_acc,
                            'v-dep': view_dep_acc, 'v-indep': view_indep_acc,
-                           'all': all_accuracy, 'among-true': among_true_acc})
+                           'all': all_accuracy, 'among-true': among_true_acc,
+                           'distractor_impact_ratio': distractor_impact_ratio})
 
     acc_df.to_csv(out_file[:-4] + '.csv', index=False)
 

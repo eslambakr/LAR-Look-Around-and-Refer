@@ -402,6 +402,7 @@ def detailed_predictions_on_dataset(model, data_loader, args, device, FOR_VISUAL
     res['target_pos'] = list()
     res['context_size'] = list()
     res['guessed_correctly_among_true_class'] = list()
+    res['distractor_impact_ratio'] = list()
 
     batch_keys = make_batch_keys(args, extras=['context_size', 'target_class_mask'])
 
@@ -439,6 +440,13 @@ def detailed_predictions_on_dataset(model, data_loader, args, device, FOR_VISUAL
         res['contrasted_objects'].append(batch['class_labels'].cpu().numpy())
         res['target_pos'].append(batch['target_pos'].cpu().numpy())
         res['context_size'].append(batch['context_size'].cpu().numpy())
+        mask = ~(predictions == batch['target_pos']).cpu().numpy()
+        class_labels = batch['class_labels'].cpu().numpy()
+        distractor_impact = class_labels[mask, predictions[mask].cpu().numpy()] == class_labels[
+            mask, batch['target_pos'][mask].cpu().numpy()]
+        count = np.count_nonzero(distractor_impact)
+        distractor_impact_ratio = 100*count/len(distractor_impact)
+        res['distractor_impact_ratio'].append(distractor_impact_ratio)
 
         if FOR_VISUALIZATION:
             res['utterance'].append(batch['utterance'])
@@ -460,6 +468,7 @@ def detailed_predictions_on_dataset(model, data_loader, args, device, FOR_VISUAL
     res['target_pos'] = np.hstack(res['target_pos'])
     res['context_size'] = np.hstack(res['context_size'])
     res['guessed_correctly_among_true_class'] = np.hstack(res['guessed_correctly_among_true_class'])
+    res['distractor_impact_ratio'] = np.array(res['distractor_impact_ratio'])
 
     return res
 
