@@ -275,14 +275,17 @@ class MMT_ReferIt3DNet(nn.Module):
 
         # Get feature for utterance
         txt_inds = batch["token_inds"]  # batch_size, lang_size
+        # print("txt_inds = ", txt_inds.shape)
         txt_type_mask = torch.ones(txt_inds.shape, device=torch.device('cuda')) * 1.
         txt_mask = _get_mask(batch['token_num'].to(txt_inds.device), txt_inds.size(1))  # all proposals are non-empty
+        # print("txt_mask = ", txt_mask.shape)
         txt_type_mask = txt_type_mask.long()
         text_bert_out = self.text_bert(
             txt_inds=txt_inds,
             txt_mask=txt_mask,
             txt_type_mask=txt_type_mask
         )
+        # print("text_bert_out = ", text_bert_out.shape)
         txt_emb = self.text_bert_out_linear(text_bert_out)
         # Classify the target instance label based on the text
         if self.language_clf is not None:

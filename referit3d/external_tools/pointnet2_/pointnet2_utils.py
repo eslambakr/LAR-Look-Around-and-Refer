@@ -14,7 +14,7 @@ from __future__ import (
 import torch
 from torch.autograd import Function
 import torch.nn as nn
-import referit3d.external_tools.pointnet2.pytorch_utils as pt_utils
+import pytorch_utils as pt_utils
 import sys
 
 try:
@@ -23,8 +23,7 @@ except:
     import __builtin__ as builtins
 
 try:
-    # import referit3d.models.backbone.visual_encoder.pointnet2._ext as _ext
-    import pointnet3._ext as _ext
+    import pointnet2._ext as _ext
 except ImportError:
     if not getattr(builtins, "__POINTNET2_SETUP__", False):
         raise ImportError(
@@ -69,9 +68,7 @@ class FurthestPointSampling(Function):
         torch.Tensor
             (B, npoint) tensor containing the set
         """
-        fps_inds = _ext.furthest_point_sampling(xyz, npoint)
-        ctx.mark_non_differentiable(fps_inds)
-        return fps_inds
+        return _ext.furthest_point_sampling(xyz, npoint)
 
     @staticmethod
     def backward(xyz, a=None):
@@ -280,9 +277,7 @@ class BallQuery(Function):
         torch.Tensor
             (B, npoint, nsample) tensor with the indicies of the features that form the query balls
         """
-        inds = _ext.ball_query(new_xyz, xyz, radius, nsample)
-        ctx.mark_non_differentiable(inds)
-        return inds
+        return _ext.ball_query(new_xyz, xyz, radius, nsample)
 
     @staticmethod
     def backward(ctx, a=None):
@@ -380,12 +375,11 @@ class QueryAndGroup(nn.Module):
 class GroupAll(nn.Module):
     r"""
     Groups all features
-
     Parameters
     ---------
     """
 
-    def __init__(self, use_xyz=True, ret_grouped_xyz=False):
+    def __init__(self, use_xyz=True):
         # type: (GroupAll, bool) -> None
         super(GroupAll, self).__init__()
         self.use_xyz = use_xyz
@@ -419,8 +413,4 @@ class GroupAll(nn.Module):
                 new_features = grouped_features
         else:
             new_features = grouped_xyz
-
-        if self.ret_grouped_xyz:
-            return new_features, grouped_xyz
-        else:
-            return new_features
+        return new_features

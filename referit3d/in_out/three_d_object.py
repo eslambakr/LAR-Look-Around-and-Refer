@@ -389,18 +389,20 @@ class ThreeDObject(object):
             # TODO: Eslam, I will clean this:
             # Eslam: To generate Nr3d data add "or True" to generate data for "_00" files:
             if not "_00/" in os.path.join(obj_pth, str(0))+"_"+str(0)+".jpg" or True:
-                """
+                # """
                 project_pc_2_img(scan, obj=self, saving_pth=os.path.join(obj_pth, str(0)), augment=False,
                                  cocoonAngles=cocoonAngles)
+                # """
                 """
                 start = 100
                 for i in range(start+1, start+numImgPerObj+1):
                     imgName = os.path.join(obj_pth, str(i))
                     project_pc_2_img(scan, obj=self, saving_pth=imgName, augment=True, cocoonAngles=cocoonAngles)
                 """
+                # """
                 project_pc_2_img(scan, obj=self, saving_pth=os.path.join(obj_pth, str(100)), augment=False,
                                  cocoonAngles=cocoonAngles)
-                """
+                # """
 
             # Eslam: Instead of storing the whole points for each object,
             # store only sub-sample of it to make pkl smaller

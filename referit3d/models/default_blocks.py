@@ -10,6 +10,8 @@ import torchvision.models as models
 import argparse
 from timm.models import create_model
 from referit3d.models.backbone.visual_encoder.pointnet2 import get_model
+from referit3d.external_tools.pointnet2.pointnet2 import Pointnet2Backbone
+import clip
 
 try:
     from referit3d.models import PointNetPP
@@ -21,13 +23,16 @@ except ImportError:
 # Object Encoder
 #
 def image_object_encoder(args: argparse.Namespace, featdim):
-    model = create_model("convnext_tiny", pretrained=True, num_classes=featdim, drop_path_rate=0.1, head_init_scale=1.0)
+    # model = create_model("convnext_tiny", pretrained=True, num_classes=featdim, drop_path_rate=0.1, head_init_scale=1.0)
     # model = nn.Sequential(model, nn.Dropout(0.2))
+    model, preprocess = clip.load("ViT-B/16")
+    model = model.encode_image
     return model
 
 
 def pc_object_encoder(args: argparse.Namespace, featdim):
-    model = get_model(num_class=args.object_latent_dim, normal_channel=True)
+    model = get_model(num_class=args.object_latent_dim, normal_channel=True)  # PyTorch Version
+    # model = Pointnet2Backbone(num_class=args.object_latent_dim, input_feature_dim=3)  # Cuda Version 2
     return model
 
 
