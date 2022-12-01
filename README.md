@@ -90,8 +90,14 @@ Part of the code or models are from [ScanRef](https://github.com/daveredrum/Scan
 eslam.abdelrahman@kaust.edu.sa
 
 ## :mailbox_with_mail: Citation
-@inproceedings{bakrlook, title={Look Around and Refer: 2D Synthetic Semantics Knowledge Distillation for 3D Visual Grounding},
 
-author={Bakr, Eslam Mohamed and Alsaedy, Yasmeen Youssef and Elhoseiny, Mohamed},
-
-booktitle={Advances in Neural Information Processing Systems} }
+Please consider citing our paper if you find it useful.
+```
+@inproceedings{bakrlook, 
+               title={Look Around and Refer: 2D Synthetic Semantics Knowledge Distillation for 3D Visual Grounding},
+               author={Bakr, Eslam Mohamed and 
+                       Alsaedy, Yasmeen Youssef and
+                       Elhoseiny, Mohamed},
+               booktitle={Advances in Neural Information Processing Systems} 
+               }
+```
